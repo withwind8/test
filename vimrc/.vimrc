@@ -32,7 +32,8 @@ Plugin 'gmarik/Vundle.vim'
 " Avoid a name conflict with L9
 "Plugin 'user/L9', {'name': 'newL9'}
 
-Plugin 'taglist.vim'
+"Plugin 'taglist.vim'
+Plugin 'majutsushi/tagbar'
 
 Plugin 'scrooloose/nerdtree'
 Plugin 'scrooloose/nerdcommenter'
@@ -79,6 +80,9 @@ set nobackup
 
 set hlsearch
 set incsearch
+set ignorecase smartcase
+
+
 
 set number
 set ruler
@@ -93,17 +97,31 @@ set softtabstop=4
 set expandtab
 set shiftwidth=4
 
-set fileencodings=utf8,gbk,gb2312,gb18030
+"encoding config
+set encoding=utf-8
+set langmenu=zh_CN.UTF-8
+language message zh_CN.UTF-8
+
+"reload menu with UTF-8 encoding
+source $VIMRUNTIME/delmenu.vim
+source $VIMRUNTIME/menu.vim
+
+
+"set fileencodings=utf8,gbk,gb2312,gb18030
+set fileencodings=ucs-bom,utf-8,cp936,gb18030,big5,euc-jp,euc-kr,latin1
 
 """"""""""""""""""""""""Plugin Config"""""""""""
 "nerdtree
 nmap <silent> <leader>f :NERDTreeToggle<cr> 
 
 "taglist
-map <silent> <leader>t :Tlist<cr>
-let Tlist_Show_One_File = 1
-let Tlist_Exit_OnlyWindow = 1
-let Tlist_Use_Right_Window = 1
+"map <silent> <leader>tl :Tlist<cr>
+"let Tlist_Show_One_File = 1
+"let Tlist_Exit_OnlyWindow = 1
+"let Tlist_Use_Right_Window = 1
+
+"tagbar
+nmap <silent> <leader>t :TagbarToggle<CR>
 
 "powerline
 set laststatus=2
