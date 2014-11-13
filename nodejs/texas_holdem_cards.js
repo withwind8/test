@@ -7,11 +7,9 @@ SUIT_NAME = ["Spade","Heart","Club","Diamond"];
 toCardname = function(a) { return SUIT_NAME[toSuit(a)]+" "+ RANK_NAME[toRank(a)]};
 
 cardScore = function(cards) {
-    var smallPoint = function(ranks,discard){
+    var smallPoint = function(ranks,no){
         var POINT = [0,0.0001,0.0002,0.0004,0.0008,0.0016,0.0032,0.0064,0.0128,0.0256,0.0512,0.1024,0.2048];
-        var small = 0;
-        ranks.slice(discard,5).forEach(function(a){small += POINT[a]});
-        return small;
+        return ranks.slice(0,no).reduce(function(a,b){return a+POINT[b]},0)
     }
     var cardsRank = cards.map(toRank).sort(sortMax);
     var cardsSuit = cards.map(toSuit).sort();
@@ -44,7 +42,7 @@ cardScore = function(cards) {
     if(suitResult && straightStart>-1){
         score = 293 + straightRank[straightStart] -3;
     }else if(rankResult[0][1]==4){
-        score = 280 + rankResult[0][0] + smallPoint(cardsRank,4);
+        score = 280 + rankResult[0][0] + smallPoint(cardsRank.filter(function(a){return a!=rankResult[0][0]}),1);
     }else if(rankResult[0][1]==3 && (rankResult[1][1]==3 || rankResult[1][1]==2)){
         score = 124 + rankResult[0][0]*12 +rankResult[1][0]-((rankResult[1][0]>rankResult[0][0])?1:0);
     }else if(suitResult){
@@ -52,13 +50,13 @@ cardScore = function(cards) {
     }else if(straightStart>-1){
         score = 113 + straightRank[straightStart]-3;
     }else if(rankResult[0][1]==3){
-        score = 100 + rankResult[0][0]+smallPoint(cardsRank,3);
+        score = 100 + rankResult[0][0]+smallPoint(cardsRank.filter(function(a){return a!=rankResult[0][0]}),2);
     }else if(rankResult[0][1]==2 && rankResult[1][1]==2){
-        score = 22 + rankResult[0][0]*(rankResult[0][0]-1)/2 +rankResult[1][0] +smallPoint(cardsRank,4);
+        score = 22 + rankResult[0][0]*(rankResult[0][0]-1)/2 +rankResult[1][0] +smallPoint(cardsRank.filter(function(a){return a!=rankResult[0][0]&&a!=rankResult[1][0]}),1);
     }else if(rankResult[0][1]==2){
-        score = 9 + rankResult[0][0]+smallPoint(cardsRank,2);
+        score = 9 + rankResult[0][0]+smallPoint(cardsRank.filter(function(a){return a!=rankResult[0][0]}),3);
     }else{
-        score = smallPoint(cardsRank,0);
+        score = smallPoint(cardsRank,5);
     }
     return score;
 }
