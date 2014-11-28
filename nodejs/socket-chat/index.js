@@ -7,6 +7,7 @@ app.get('/', function(req,res){
 });
 
 var users=[];
+var sockets = {};
 
 io.on('connection',function(socket){
 	var name="";
@@ -26,27 +27,43 @@ io.on('connection',function(socket){
 		}
 		io.emit('logout',name);
 	});
-	socket.on('chat message', function(msg){
-		console.log(name + ' : '+ msg);
-		socket.broadcast.emit('chat message',{
-			name:name,
-			msg:msg
-		});
+	socket.on('chat message', function(data){
+		console.log(name +' to '+ (data.to==''?'all':data.to) +' : '+ data.msg);
+		if(sockets.hasOwnProperty(data.to)){
+			sockets[data.to].emit('chat message',{
+				name:name,
+				msg:data.msg
+			});
+		}else{
+			socket.broadcast.emit('chat message',{
+				name:name,
+				msg:data.msg
+			});
+		}
 	});
 	socket.on('name message', function(msg){
 		name=msg;
 		console.log(name + " login");
 		socket.emit('users',users);
 		users.push(name);
+		sockets[name]=socket;
 		io.emit('login',name);
 	});
-	socket.on('typing', function(){
-		console.log(name + "  typing");
-		socket.broadcast.emit('typing',name);
+	socket.on('typing', function(to){
+		console.log(name + "  typing to "+ (to==""?"all":to));
+		if(sockets.hasOwnProperty(to)){
+			sockets[to].emit('typing',name);
+		}else{
+			socket.broadcast.emit('typing',name);
+		}
 	});
-	socket.on('typing end', function(){
-		console.log(name + "  typing end");
-		socket.broadcast.emit('typing end',name);
+	socket.on('typing end', function(to){
+		console.log(name + "  typing end to " + (to==""?"all":to));
+		if(sockets.hasOwnProperty(to)){
+			sockets[to].emit('typing end',name);
+		}else{
+			socket.broadcast.emit('typing end',name);
+		}
 	});
 });
 

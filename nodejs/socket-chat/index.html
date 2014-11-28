@@ -5,7 +5,7 @@
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; }
       body { font: 13px Helvetica, Arial; }
-      form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
+      form { padding: 3px; position: fixed; bottom: 0; width: 100%; }
       form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
       form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
       #messages { float:left;list-style-type: none; margin: 0; padding: 0; height:100%;width:70%;overflow-y: scroll}
@@ -14,7 +14,7 @@
       #messages li .name {color:red; margin-right: 20px; font-size: 200%}
       #message li.typing span {color:green}
 
-      #users {float:right;width:30%;}
+      #users {list-style-type:none;float:right;width:30%;}
     </style>
     
  
@@ -27,7 +27,7 @@
       <input id="n" placeholder="Type your nickname..." autocomplete="off" /><button>OK</button>
     </form>
     <form id="msg" action="">
-      <input id="m" placeholder="Type here..."  autocomplete="off" /><button>Send</button>
+      <span id="to"></span><input id="m" placeholder="Type here..."  autocomplete="off" /><button>Send</button>
     </form>
 
     <script src="https://cdn.socket.io/socket.io-1.2.1.js"></script>
@@ -36,11 +36,14 @@
       var socket = io();
       var name="default";
       var typing=false;
+      var msgTo="";
 
       $('#msg').hide();
       $('#n').focus();
       $('#msg').submit(function(){
-        socket.emit('chat message', $('#m').val());
+        socket.emit('chat message', {
+          to : msgTo,
+          msg : $('#m').val()});
         $('#messages').append($('<li>').append(
           $('<span class="name"/>').text(name),
           $('<span class="msg"/>').text($('#m').val())));
@@ -61,13 +64,31 @@
         if($('#m').val()!=""){
           if(!typing){
             typing=true;
-            socket.emit('typing');
+            socket.emit('typing',msgTo);
           }
         }else{
           typing=false;
-          socket.emit('typing end');
+          socket.emit('typing end',msgTo);
         }
       });
+      $('#users').delegate('li', 'click', function(){
+        if(name!=$(this).text()){
+          msgTo=$(this).text();
+          $('#to').text(msgTo);
+          if($('#m').val()!=""){
+            socket.emit('typing end',"");
+            socket.emit('typing',msgTo)
+          }
+        }
+      });
+      $('#to').click(function(){
+        msgTo="";
+        $(this).text("");
+        if($('#m').val()!=""){
+          socket.emit('typing end',"");
+          socket.emit('typing',"")
+        }
+      })
 
       socket.on('chat message', function (data) {
         var typing_li = $('.typing').filter(function(){ 
