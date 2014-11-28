@@ -67,19 +67,15 @@ cardScore = function(cards) {
     return score;
 }
 
-table = [14,5,6,7,8]
-players = [["tom",[15,17],100,2],["tim",[22,24],200,0],["jim",[35,37],50,2]];
-//for one player [name,cards,bets,status]  status 0 call 1 flod 2 allin 
+//players is array, for one player [name,cards,bets,status]  status 0 call 1 flod 2 allin 
 gameResult = function(cards,players){
-    var score = players.map(function(a){return cardScore(cards.concat(a[1]))});
-    players.forEach(function(v,i){v.push(score[i])});
+    if(players[0][4]==undefined){
+        var score = players.map(function(a){return cardScore(cards.concat(a[1]))});
+        players.forEach(function(v,i){v.push(score[i])});
+    }
     players.sort(function(a,b){return b[4]>a[4]&&b[3]!=1});
-
     var winners = players.filter(function(a){return a[4]==players[0][4] && a[3]!=1 });
-
-    console.log(winners);
     var part = winners.reduce(function(a,b){return (b[2]<a)?b[2]:a},10000000000);
-    console.log(part);
 
     var prize = 0;
     players.forEach(function(a){
@@ -89,12 +85,17 @@ gameResult = function(cards,players){
         }else{
             prize += a[2];
             a[2]=0;
-            a[3]=2;
+            a[3]=1;
         }
     })
-    console.log(prize);
-
-    
+    eachPrize = prize/winners.length;
+    winners.forEach(function(a){
+        if(a[5]==undefined){
+            a[5]=eachPrize;
+        }else{
+            a[5]+=eachPrize;
+        }
+    });
 
     if(players.some(function(a){return a[2]!=0})){
         gameResult(cards,players);
@@ -102,4 +103,13 @@ gameResult = function(cards,players){
 }
 
 
+table = [14,5,6,7,8]
+players = [["tom",[15,17],100,2],["tim",[22,24],200,0],["jim",[35,37],50,2]];
 gameResult(table,players);
+console.log("On Table:");
+table.forEach(function(a){console.log(toCardname(a))});
+players.forEach(function(a){
+    if(a[5]!==undefined){
+        console.log(a[0]," ",toCardname(a[1][0])," ",toCardname(a[1][1])," win ",a[5]);
+    }
+})
