@@ -113,3 +113,133 @@ players.forEach(function(a){
         console.log(a[0]," ",toCardname(a[1][0])," ",toCardname(a[1][1])," win ",a[5]);
     }
 })
+
+
+
+TEXAS_HOLDEM_ROUND = {
+    "PRE_FLOP":0,
+    "FLOP":1,
+    "TURN":2,
+    "RIVER":3
+};
+
+texasHoldedFSM = function(table, action){
+    var current = table.players[table.current];
+    if(action.playerName!=current.name){
+        return 1; //非当前玩家操作
+    }
+    if(action.bet>table.players[table.current].cash){
+        return 2; //下注金额不足
+    }
+
+//下面的代码段与后面注释的代码等价(完善了当前玩家转移部分)，结构更好，但不易读
+    if((action.bet < table.maxRoundBet - current.bets_round)&&(action.bet!=current.cash)){
+        return 3; //下注不符规则，不够跟注，而且不是全下
+    }
+    if((action.bet > table.maxRoundBet - current.bets_round)
+        &&(action.bet <table.maxRoundBet + table.raise - current.bets_round)
+        &&(action.bet!=current.cash)){
+        return 4; //下注不符规则，不够加注，而且不是全下
+    }
+
+    if(action.bet <0){
+        current.fold = true;
+    }else{
+        current.bets_round += action.bet;
+        current.cash -= action.bet;
+
+        if(current.bets_round - table.maxRoundBet >= table.raise){
+            table.raise = current.bets_round - table.maxRoundBet;
+            table.raiser = table.current;
+        }
+
+        if(current.bets_round > table.maxRoundBet){
+            table.maxRoundBet = current.bets_round;
+        }
+    }
+
+    do{
+        table.current = (table.current+1)%table.players.length;
+        //TODO 如果都all in了,这里可能有死循环
+    }while((table.players[table.current].cash==0)||(table.players[table.current].fold))
+
+
+
+/*
+    if(action.bet < 0){
+        //flod
+        current.fold=true;
+        table.current = (table.current+1)%table.players.length;
+    }else if(action.bet < table.maxRoundBet - current.bets_round){
+        if(action.bet ==  current.cash){
+            //不足全下
+            current.bets_round +=action.bet;
+            current.cash = 0;
+            table.current = (table.current+1)%table.players.length;
+        }else{
+            return 3; //下注不符规则，不够跟注
+        }
+    }else if(action.bet == table.maxRoundBet - current.bets_round){
+        //跟与过，包括正好全下的
+        current.bets_round += action.bet;
+        current.cash -= action.bet;
+        table.current = (table.current+1)%table.players.length;
+    }else if(action.bet <table.maxRoundBet + table.raise - current.bets_round){
+        if(action.bet == current.cash){
+            //大于跟注小于加注的全下
+            current.bets_round +=action.bet;
+            current.cash = 0;
+
+            table.maxRoundBet = current.bets_round;
+            table.current = (table.current+1)%table.players.length;
+
+            //达不到raise金额的all in不算raise，又轮回raiser时不可加，只能跟，所以这里不更改raise和raiser
+
+        }else{
+            return 4;//下注不符规则，不够加注
+        }
+    }else{
+        //加注，包括达到加注要求的全下
+        current.bets_round += action.bet;
+        current.cash -= action.bet;
+
+        table.raiser = table.current;
+        table.current = (table.current+1)%table.players.length;
+
+        table.raise = current.bets_round - table.maxRoundBet;
+        table.maxRoundBet = current.bets_round;
+    }
+*/
+
+    //判断round结束
+    //TODO:如果raiser同时all in了，会被跳过，如果有多个all in，更复杂，结合前面的转到下一个玩家的TODO一起处理
+    if(table.current >= table.raiser){
+        return 100; //round结束
+    }
+
+    return 0; //OK 继续
+}
+
+table={};
+table.smallBlind=5;
+table.bigBlind=10;
+table.round=TEXAS_HOLDEM_ROUND.PRE_FLOP;
+table.players=[
+    {"name":"tom","cash":400,"bets_all":0,"bets_round":0,"fold":false},
+    {"name":"john","cash":400,"bets_all":5,"bets_round":5,"fold":false},
+    {"name":"liqing","cash":400,"bets_all":10,"bets_round":10,"fold":false},
+    {"name":"lilong","cash":400,"bets_all":0,"bets_round":0,"fold":false}
+];
+table.raiser=3;//BB在首轮是有加注的机会，初始加注者应该为BB的下手
+table.raise=table.bigBlind;
+table.maxRoundBet=10;
+table.current = 3;
+
+action = {};
+action.playerName="lilong";
+action.bet=20;
+
+//texasHoldedFSM(table,action);
+
+
+
