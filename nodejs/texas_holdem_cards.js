@@ -132,18 +132,18 @@ texasHoldedFSM = function(table, action){
         return 2; //下注金额不足
     }
 
-    if((action.bet < table.maxRoundBet - current.bets_round)&&(action.bet!=current.cash)){
-        return 3; //下注不符规则，不够跟注，而且不是全下
-    }
-    if((action.bet > table.maxRoundBet - current.bets_round)
-        &&(action.bet <table.maxRoundBet + table.raise - current.bets_round)
-        &&(action.bet!=current.cash)){
-        return 4; //下注不符规则，不够加注，而且不是全下
-    }
-
     if(action.bet <0){
         current.fold = true;
     }else{
+        if((action.bet < table.maxRoundBet - current.bets_round)&&(action.bet!=current.cash)){
+            return 3; //下注不符规则，不够跟注，而且不是全下
+        }
+        if((action.bet > table.maxRoundBet - current.bets_round)
+            &&(action.bet <table.maxRoundBet + table.raise - current.bets_round)
+            &&(action.bet!=current.cash)){
+            return 4; //下注不符规则，不够加注，而且不是全下
+        }
+
         current.bets_round += action.bet;
         current.cash -= action.bet;
 
@@ -167,26 +167,53 @@ texasHoldedFSM = function(table, action){
     return 0; //OK 继续
 }
 
-table={};
-table.smallBlind=5;
-table.bigBlind=10;
-table.round=TEXAS_HOLDEM_ROUND.PRE_FLOP;
-table.players=[
-    {"name":"tom","cash":400,"bets_all":0,"bets_round":0,"fold":false},
-    {"name":"john","cash":400,"bets_all":5,"bets_round":5,"fold":false},
-    {"name":"liqing","cash":400,"bets_all":10,"bets_round":10,"fold":false},
-    {"name":"lilong","cash":400,"bets_all":0,"bets_round":0,"fold":false}
-];
-table.raiser=3;//BB在首轮是有加注的机会，初始加注者应该为BB的下手
-table.raise=table.bigBlind;
-table.maxRoundBet=10;
-table.current = 3;
+Table = function(smallBlind, bigBlind,minBuyIn,maxBuyIn,defaultBuyIn){
+    this.smallBlind = smallBlind;
+    this.bigBlind = bigBlind;
+    this.minBuyIn = minBuyIn;
+    this.maxBuyIn = maxBuyIn;
+    this.defaultBuyIn = defaultBuyIn;
+    this.players=[];
+}
+Table.prototype.buyIn = function(name, cash){
+    var cash = cash || this.defaultBuyIn;
+    this.players.push({name:name,cash:cash,bets_all:0,bets_round:0,fold:false,cards:[]});
+}
+Table.prototype.startGame = function(){
+    this.dealer = 0;
+    this.players[(this.dealer+1)%this.players.length].bets_round = this.smallBlind;
+    this.players[(this.dealer+1)%this.players.length].cash -= this.smallBlind;
+    this.players[(this.dealer+2)%this.players.length].bets_round = this.bigBlind;
+    this.players[(this.dealer+2)%this.players.length].cash -= this.bigBlind;
+    this.current = (this.dealer+3)%this.players.length;
+    this.raiser = this.current;//BB在首轮是有加注的机会，初始加注者应该为BB的下手
+    this.raise = table.bigBlind;
+    this.maxRoundBet=10;
 
-action = {};
-action.playerName="lilong";
-action.bet=20;
+    this.cards=[];
+    while(this.cards.length < 5+2*this.players.length){
+        var newCard = Math.floor(Math.random()*52);
+        if(!this.cards.some(function(a){return a==newCard;})){
+            this.cards.push(newCard);
+        }
+    }
+    for(var i=0;i<this.players.length;i++){
+        this.players[i].cards.push(this.cards.pop());
+        this.players[i].cards.push(this.cards.pop());
+    }
 
-//texasHoldedFSM(table,action);
+    this.round = TEXAS_HOLDEM_ROUND.PRE_FLOP;
+}
+Table.prototype.action=function(name,bet){
+    return texasHoldedFSM(this,{playerName:name,bet:bet});
+}
 
+table = new Table(5,10,100,800,400);
+table.buyIn("tom");
+table.buyIn("john");
+table.buyIn("liqing",500);
+table.buyIn("lilong");
+table.startGame();
+table.action("lilong",500);
 
 
