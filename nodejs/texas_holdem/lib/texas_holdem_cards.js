@@ -61,13 +61,13 @@ cardScore = function(cards) {
             }
         }
         if(array[array.length-4]==3 && array[0]==12){
-            straightStart = array.length-4;
+            result = array.length-4;
         }
         return result
     }
     var straightStart = checkStraight(straightRank);
     var suitRank = cards.filter(function(a){return toSuit(a)==flushSuit}).sort(sortMax);
-    var suitStraightStart = checkStraight(suitRank);
+    var suitStraightStart = checkStraight(suitRank.map(toRank));
     if(suitResult && suitStraightStart>-1){
         score = 293 + toRank(suitRank[suitStraightStart]) -3;
     }else if(rankResult[0][1]==4){
@@ -75,7 +75,7 @@ cardScore = function(cards) {
     }else if(rankResult[0][1]==3 && (rankResult[1][1]==3 || rankResult[1][1]==2)){
         score = 124 + rankResult[0][0]*12 +rankResult[1][0]-((rankResult[1][0]>rankResult[0][0])?1:0);
     }else if(suitResult){
-        score = 123 + smallPoint(suitRank,5);
+        score = 123 + smallPoint(suitRank.map(toRank),5);
     }else if(straightStart>-1){
         score = 113 + straightRank[straightStart]-3;
     }else if(rankResult[0][1]==3){
