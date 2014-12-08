@@ -69,7 +69,7 @@ cardScore = function(cards) {
     var suitRank = cards.filter(function(a){return toSuit(a)==flushSuit}).sort(sortMax);
     var suitStraightStart = checkStraight(suitRank);
     if(suitResult && suitStraightStart>-1){
-        score = 293 + suitRank[suitStraightStart] -3;
+        score = 293 + toRank(suitRank[suitStraightStart]) -3;
     }else if(rankResult[0][1]==4){
         score = 280 + rankResult[0][0] + smallPoint(cardsRank.filter(function(a){return a!=rankResult[0][0]}),1);
     }else if(rankResult[0][1]==3 && (rankResult[1][1]==3 || rankResult[1][1]==2)){
@@ -261,3 +261,9 @@ test = function(){
     table.action("john",195);
     table.action("liqing",-1);
 }
+
+module.exports = Table;
+module.exports.gameResult = gameResult;
+module.exports.cardScore = cardScore;
+module.exports.texasHoldedFSM = texasHoldedFSM;
+
