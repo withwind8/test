@@ -67,54 +67,50 @@ cardScore = function(cards) {
     return score;
 }
 
-//players is array, for one player [name,cards,bets,status]  status 0 call 1 flod 2 allin 
+
 gameResult = function(cards,players){
-    if(players[0][4]==undefined){
-        var score = players.map(function(a){return cardScore(cards.concat(a[1]))});
-        players.forEach(function(v,i){v.push(score[i])});
-    }
-    players.sort(function(a,b){return b[4]>a[4]&&b[3]!=1});
-    var winners = players.filter(function(a){return a[4]==players[0][4] && a[3]!=1 });
-    var part = winners.reduce(function(a,b){return (b[2]<a)?b[2]:a},10000000000);
-
-    var prize = 0;
-    players.forEach(function(a){
-        if(a[2]>part){
-            prize += part;
-            a[2] -= part;
-        }else{
-            prize += a[2];
-            a[2]=0;
-            a[3]=1;
-        }
+    players.forEach(function(player){
+        player.score = cardScore(cards.concat(player.cards));
+        player.prize = 0;
     })
-    eachPrize = prize/winners.length;
-    winners.forEach(function(a){
-        if(a[5]==undefined){
-            a[5]=eachPrize;
-        }else{
-            a[5]+=eachPrize;
-        }
-    });
 
-    if(players.some(function(a){return a[2]!=0})){
-        gameResult(cards,players);
+    while(players.some(function(player){return player.bets_all!=0})){
+        //找出最高分
+        var maxScore = players.reduce(function(score,player){
+            return player.score>score?player.score:score;
+        },0)
+        //找出胜者
+        var winners = players.filter(function(player){
+            return player.score==maxScore && !player.fold && player.bets_all>0;
+        })
+        //找出胜者中下注最小的
+        var part = winners.reduce(function(minBet,winner){
+            return winner.bets_all<minBet?winner.bets_all:minBet;
+        },1000000000000);
+        //汇入奖池
+        var prize = 0;
+        players.forEach(function(player){
+            var playerPart = (player.bets_all>part? part:player.bets_all);
+            prize += playerPart;
+            player.bets_all -= playerPart;
+        })
+        //均分奖池
+        eachPrize = prize/winners.length;
+        winners.forEach(function(winner){
+            winner.prize += eachPrize;
+        })
     }
 }
 
-
-table = [14,5,6,7,8]
-players = [["tom",[15,17],100,2],["tim",[22,24],200,0],["jim",[35,37],50,2]];
-gameResult(table,players);
-console.log("On Table:");
-table.forEach(function(a){console.log(toCardname(a))});
-players.forEach(function(a){
-    if(a[5]!==undefined){
-        console.log(a[0]," ",toCardname(a[1][0])," ",toCardname(a[1][1])," win ",a[5]);
-    }
-})
-
-
+printResult = function(cards,players){
+    console.log("On Table:");
+    cards.forEach(function(card){console.log(toCardname(card))});
+    players.forEach(function(player){
+        if(player.prize!==0){
+            console.log(player.name," ",toCardname(player.cards[0])," ",toCardname(player.cards[1])," win ",player.prize);
+        }
+    })
+}
 
 TEXAS_HOLDEM_ROUND = {
     "PRE_FLOP":0,
@@ -187,7 +183,7 @@ Table.prototype.startGame = function(){
     this.players[(this.dealer+2)%this.players.length].cash -= this.bigBlind;
     this.current = (this.dealer+3)%this.players.length;
     this.raiser = this.current;//BB在首轮是有加注的机会，初始加注者应该为BB的下手
-    this.raise = table.bigBlind;
+    this.raise = this.bigBlind;
     this.maxRoundBet=10;
 
     this.cards=[];
@@ -205,15 +201,33 @@ Table.prototype.startGame = function(){
     this.round = TEXAS_HOLDEM_ROUND.PRE_FLOP;
 }
 Table.prototype.action=function(name,bet){
-    return texasHoldedFSM(this,{playerName:name,bet:bet});
+    if(texasHoldedFSM(this,{playerName:name,bet:bet}) == 100){
+        this.round += 1;
+        this.players.forEach(function(player){
+            player.bets_all += player.  bets_round;
+            player.bets_round = 0;
+        })
+        var canBetPlayer = this.players.reduce(function(count,player){
+            return count + (player.cash > 0 && !player.fold)?1:0;
+        }, 0);
+        if((canBetPlayer <=1) ||(this.round > TEXAS_HOLDEM_ROUND.RIVER)){
+            //结束
+            console.log("game over")
+            gameResult(this.cards,this.players);
+            printResult(this.cards,this.players);
+        }
+    }
 }
 
-table = new Table(5,10,100,800,400);
-table.buyIn("tom");
-table.buyIn("john");
-table.buyIn("liqing",500);
-table.buyIn("lilong");
-table.startGame();
-table.action("lilong",500);
-
-
+test = function(){
+    var table = new Table(5,10,100,800,400);
+    table.buyIn("tom");
+    table.buyIn("john");
+    table.buyIn("liqing",500);
+    table.buyIn("lilong");
+    table.startGame();
+    table.action("lilong",400);
+    table.action("tom",-1);
+    table.action("john",395);
+    table.action("liqing",390);
+}
