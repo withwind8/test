@@ -6,6 +6,29 @@ RANK_NAME = ["2","3","4","5","6","7","8","9","10","J","Q","K","A"];
 SUIT_NAME = ["Spade","Heart","Club","Diamond"];
 toCardname = function(a) { return SUIT_NAME[toSuit(a)]+" "+ RANK_NAME[toRank(a)]};
 
+HAND_NAME = ["Straight flush","Four of a kind","Full house","Flush","Straight","Three of a kind","Two pair","One pair","High card"];
+toHandName = function(score){
+    if(score>=293){
+        return HAND_NAME[0];
+    }else if(score>=280){
+        return HAND_NAME[1];
+    }else if(score>=124){
+        return HAND_NAME[2];
+    }else if(score>=123){
+        return HAND_NAME[3];
+    }else if(score>=113){
+        return HAND_NAME[4];
+    }else if(score>=100){
+        return HAND_NAME[5];
+    }else if(score>=22){
+        return HAND_NAME[6]
+    }else if(score>=9){
+        return HAND_NAME[7];
+    }else{
+        return HAND_NAME[8];
+    }
+}
+
 cardScore = function(cards) {
     var smallPoint = function(ranks,no){
         var POINT = [0,0.0001,0.0002,0.0004,0.0008,0.0016,0.0032,0.0064,0.0128,0.0256,0.0512,0.1024,0.2048];
@@ -72,27 +95,33 @@ gameResult = function(cards,players){
     players.forEach(function(player){
         player.score = cardScore(cards.concat(player.cards));
         player.prize = 0;
-    })
-
-    while(players.some(function(player){return player.bets_all!=0})){
+        player.bets_calc = player.bets_all;
+    });
+    while(players.some(function(player){return player.bets_calc!=0})){
+        /*
         //找出最高分
         var maxScore = players.reduce(function(score,player){
-            return player.score>score?player.score:score;
+            return (player.bets_calc>0 && !player.fold && player.score>score)?player.score:score;
         },0)
         //找出胜者
         var winners = players.filter(function(player){
-            return player.score==maxScore && !player.fold && player.bets_all>0;
+            return player.score==maxScore && !player.fold && player.bets_calc>0;
         })
+        */
+        //一步找出胜者，与上面的功能相同
+        var winners = players.reduce(function(result,player){
+            return (player.bets_calc<=0 || player.fold || player.score<result[0].score)?result:(player.score==result[0].score?result.concat([player]):[player]);
+        },[{score:0}])
         //找出胜者中下注最小的
         var part = winners.reduce(function(minBet,winner){
-            return winner.bets_all<minBet?winner.bets_all:minBet;
+            return winner.bets_calc<minBet?winner.bets_calc:minBet;
         },1000000000000);
         //汇入奖池
         var prize = 0;
         players.forEach(function(player){
-            var playerPart = (player.bets_all>part? part:player.bets_all);
+            var playerPart = (player.bets_calc>part? part:player.bets_calc);
             prize += playerPart;
-            player.bets_all -= playerPart;
+            player.bets_calc -= playerPart;
         })
         //均分奖池
         eachPrize = prize/winners.length;
@@ -106,17 +135,17 @@ printResult = function(cards,players){
     console.log("On Table:");
     cards.forEach(function(card){console.log(toCardname(card))});
     players.forEach(function(player){
-        if(player.prize!==0){
-            console.log(player.name," ",toCardname(player.cards[0])," ",toCardname(player.cards[1])," win ",player.prize);
-        }
+        console.log("%s %s %s %s win:%d bet:%d change:%d", player.name,toCardname(player.cards[0]),toCardname(player.cards[1]),toHandName(player.score),player.prize,player.bets_all,player.prize-player.bets_all);
     })
 }
 
 TEXAS_HOLDEM_ROUND = {
+    "BEFORE":-1,
     "PRE_FLOP":0,
     "FLOP":1,
     "TURN":2,
-    "RIVER":3
+    "RIVER":3,
+    "AFTER":4
 };
 
 texasHoldedFSM = function(table, action){
@@ -169,7 +198,8 @@ Table = function(smallBlind, bigBlind,minBuyIn,maxBuyIn,defaultBuyIn){
     this.minBuyIn = minBuyIn;
     this.maxBuyIn = maxBuyIn;
     this.defaultBuyIn = defaultBuyIn;
-    this.players=[];
+    this.players = [];
+    this.round = TEXAS_HOLDEM_ROUND.BEFORE;
 }
 Table.prototype.buyIn = function(name, cash){
     var cash = cash || this.defaultBuyIn;
@@ -204,7 +234,7 @@ Table.prototype.action=function(name,bet){
     if(texasHoldedFSM(this,{playerName:name,bet:bet}) == 100){
         this.round += 1;
         this.players.forEach(function(player){
-            player.bets_all += player.  bets_round;
+            player.bets_all += player.bets_round;
             player.bets_round = 0;
         })
         var canBetPlayer = this.players.reduce(function(count,player){
@@ -221,13 +251,13 @@ Table.prototype.action=function(name,bet){
 
 test = function(){
     var table = new Table(5,10,100,800,400);
-    table.buyIn("tom");
+    table.buyIn("tom",100);
     table.buyIn("john");
     table.buyIn("liqing",500);
     table.buyIn("lilong");
     table.startGame();
-    table.action("lilong",400);
-    table.action("tom",-1);
-    table.action("john",395);
-    table.action("liqing",390);
+    table.action("lilong",200);
+    table.action("tom",100);
+    table.action("john",195);
+    table.action("liqing",-1);
 }
