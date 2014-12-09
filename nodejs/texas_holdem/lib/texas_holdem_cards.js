@@ -93,7 +93,7 @@ cardScore = function(cards) {
 }
 
 
-gameResult = function(cards,players){
+gameResult = function(cards,players,dealer){
     players.forEach(function(player){
         player.score = cardScore(cards.concat(player.cards));
         player.prize = 0;
@@ -126,10 +126,20 @@ gameResult = function(cards,players){
             player.bets_calc -= playerPart;
         })
         //均分奖池
-        eachPrize = prize/winners.length;
+        var eachPrize = (prize/winners.length) | 0;
         winners.forEach(function(winner){
             winner.prize += eachPrize;
         })
+        //无法均分的部分,分给dealer下手最近的winner
+        var extraPrize = prize % winners.length;
+        if(extraPrize > 0){
+            var extraWinner = (dealer+1)%players.length;
+            while(winners.indexOf(players[extraWinner])<0){
+                extraWinner = (extraWinner+1)%players.length;
+            }
+            players[extraWinner].prize += extraPrize;
+        }
+
     }
 }
 
@@ -246,7 +256,7 @@ Table.prototype.action=function(name,bet){
         if((canBetPlayer <=1) ||(this.round > TEXAS_HOLDEM_ROUND.RIVER)){
             //结束
             console.log("game over")
-            gameResult(this.cards,this.players);
+            gameResult(this.cards,this.players,this.dealer);
             printResult(this.cards,this.players);
             return 1000;
         }else{

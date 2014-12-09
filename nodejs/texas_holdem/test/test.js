@@ -14,7 +14,7 @@ describe('Array', function(){
 })
 
 describe('texas holdem', function(){
-    describe('cardScore functiin', function(){
+    describe('cardScore func', function(){
         it('should return 302 when royal straight flush', function(){
             Holdem.cardScore([12,11,10,9,8]).should.equal(302);
             Holdem.cardScore([25,24,23,22,21]).should.equal(302);
@@ -171,5 +171,55 @@ describe('texas holdem', function(){
             }}}}}
         })
 */
+    })
+
+    describe('gameResult func',function(){
+        it('prize sum should equal bet sum (random test 10000 time)', function(){
+            for(var i=0;i<10000;i++){
+                var players = [];
+                var cards = [];
+                var playersCount = ((Math.random()*8)|0) +2;
+                for(var j=0;j<playersCount;j++){
+                    players.push({cards:[],bets_all:(Math.random()*1000)|0});
+                    betSum += players[j].bets_all;
+                }
+                var betSum = 0;
+                players.forEach(function(player){
+                    player.cards=[];
+                    player.bets_all = (Math.random()*1000)|0;
+                    betSum += player.bets_all;
+                });
+                while(cards.length <(2*players.length+5)){
+                    var newCard = Math.floor(Math.random()*52);
+                    if(!cards.some(function(a){return a==newCard;})){
+                        cards.push(newCard);
+                    }
+                }
+                players.forEach(function(player){
+                    player.cards.push(cards.pop());
+                    player.cards.push(cards.pop());
+                })
+                var dealer = (Math.random()*players.length)|0;
+                Holdem.gameResult(cards,players,dealer);
+                players.reduce(function(sum,player){return sum+player.prize},0).should.equal(betSum);
+            }
+        })
+        it('should assaign all prizes to player who both maxBet and maxScore',function(){
+            var players = [{name:'tom',bets_all:200,cards:[9,8]},
+                            {name:'tim',bets_all:150,cards:[5,6]},
+                            {name:'kim',bets_all:180,cards:[16,17]},
+                            {name:'sam',bets_all:170,cards:[21,22]}];
+            Holdem.gameResult([12,11,10,44,45],players,0);
+            players[0].prize.should.equal(players.reduce(function(sum,player){return sum+player.bets_all},0));
+        })
+        it('should assaign all prizes to players who both maxBet and maxScore',function(){
+            var players = [{name:'tom',bets_all:200,cards:[9,21]},
+                            {name:'tim',bets_all:200,cards:[22,8]},
+                            {name:'kim',bets_all:180,cards:[16,17]},
+                            {name:'sam',bets_all:179,cards:[24,23]}];
+            Holdem.gameResult([12,11,10,44,45],players,0);
+            (players[0].prize+players[1].prize).should.equal(players.reduce(function(sum,player){return sum+player.bets_all},0));
+            Math.abs(players[0].prize - players[1].prize).should.below(2);
+        })
     })
 })
