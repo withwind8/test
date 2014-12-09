@@ -231,7 +231,8 @@ Table.prototype.startGame = function(){
     this.round = TEXAS_HOLDEM_ROUND.PRE_FLOP;
 }
 Table.prototype.action=function(name,bet){
-    if(texasHoldedFSM(this,{playerName:name,bet:bet}) == 100){
+    var fsmRet = texasHoldedFSM(this,{playerName:name,bet:bet});
+    if(fsmRet == 100){
         this.round += 1;
         this.players.forEach(function(player){
             player.bets_all += player.bets_round;
@@ -245,8 +246,20 @@ Table.prototype.action=function(name,bet){
             console.log("game over")
             gameResult(this.cards,this.players);
             printResult(this.cards,this.players);
+            return 1000;
+        }else{
+            this.current = (this.dealer+1)%this.players.length;
+            while(this.players[this.current].fold || this.players[this.current].cash <=0){
+                this.current = (this.dealer+1)%this.players.length;
+            }
+            this.raiser = this.current;
+            this.raise = this.bigBlind;
+            this.maxRoundBet = 0;
         }
+    }else{
+        
     }
+    return fsmRet;
 }
 
 test = function(){
