@@ -68,6 +68,8 @@ cardScore = function(cards) {
     var straightStart = checkStraight(straightRank);
     var suitRank = cards.filter(function(a){return toSuit(a)==flushSuit}).sort(sortMax);
     var suitStraightStart = checkStraight(suitRank.map(toRank));
+
+    var score = 0;
     if(suitResult && suitStraightStart>-1){
         score = 293 + toRank(suitRank[suitStraightStart]) -3;
     }else if(rankResult[0][1]==4){

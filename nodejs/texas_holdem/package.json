@@ -4,7 +4,7 @@
   "description": "texas_holdem engine",
   "main": "index.js",
   "scripts": {
-    "test": "mocha"
+    "test": "mocha --check-leaks"
   },
   "keywords": [
     "holdem"
