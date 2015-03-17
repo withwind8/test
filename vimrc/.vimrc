@@ -89,6 +89,8 @@ set ruler
 
 set cursorline
 
+set mouse=a
+set t_Co=256
 color darkburn
 syntax on
 
